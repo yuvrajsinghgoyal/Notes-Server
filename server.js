@@ -10,18 +10,17 @@ import taskRoutes from './routes/taskRoutes.js';
 
 dotenv.config();
 
-// Connect to Database
+// Connect DB
 connectDB();
 
 const app = express();
 
-// ✅ Allowed Origins (IMPORTANT FIX)
+// ✅ CORS FIX (FINAL)
 const allowedOrigins = [
   "https://notes-client-juav.onrender.com",
   "http://localhost:5173"
 ];
 
-// ✅ CORS Middleware (FINAL FIX)
 app.use(cors({
   origin: function (origin, callback) {
     if (!origin || allowedOrigins.includes(origin)) {
@@ -33,7 +32,7 @@ app.use(cors({
   credentials: true
 }));
 
-// Other Middleware
+// Middleware
 app.use(helmet());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -43,33 +42,30 @@ if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 }
 
-// API Routes
+// Routes
 app.use('/api/users', userRoutes);
 app.use('/api/tasks', taskRoutes);
 
-// Base route
+// Test route
 app.get('/api', (req, res) => {
-  res.json({ message: 'Task Management API is running...' });
+  res.json({ message: 'API running...' });
 });
 
-// 404 handler
+// 404
 app.use((req, res, next) => {
-  const error = new Error(`Not Found - ${req.originalUrl}`);
   res.status(404);
-  next(error);
+  next(new Error(`Not Found - ${req.originalUrl}`));
 });
 
 // Error handler
 app.use((err, req, res, next) => {
-  const statusCode = res.statusCode === 200 ? 500 : res.statusCode;
-  res.status(statusCode).json({
+  res.status(res.statusCode || 500).json({
     message: err.message,
-    stack: process.env.NODE_ENV === 'production' ? null : err.stack,
   });
 });
 
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
-  console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });

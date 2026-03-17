@@ -15,17 +15,32 @@ connectDB();
 
 const app = express();
 
-// Security and utility middleware
-app.use(helmet());
+// ✅ Allowed Origins (IMPORTANT FIX)
+const allowedOrigins = [
+  "https://notes-client-juav.onrender.com",
+  "http://localhost:5173"
+];
+
+// ✅ CORS Middleware (FINAL FIX)
 app.use(cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
-    credentials: true, // Allow cookies to be sent
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("CORS not allowed"));
+    }
+  },
+  credentials: true
 }));
-app.use(express.json()); // Parse JSON payloads
+
+// Other Middleware
+app.use(helmet());
+app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(cookieParser()); // Parse Cookie header
+app.use(cookieParser());
+
 if (process.env.NODE_ENV === 'development') {
-    app.use(morgan('dev')); // Logging
+  app.use(morgan('dev'));
 }
 
 // API Routes
@@ -34,27 +49,27 @@ app.use('/api/tasks', taskRoutes);
 
 // Base route
 app.get('/api', (req, res) => {
-    res.json({ message: 'Task Management API is running...' });
+  res.json({ message: 'Task Management API is running...' });
 });
 
-// Generic 404 handler
+// 404 handler
 app.use((req, res, next) => {
-    const error = new Error(`Not Found - ${req.originalUrl}`);
-    res.status(404);
-    next(error);
+  const error = new Error(`Not Found - ${req.originalUrl}`);
+  res.status(404);
+  next(error);
 });
 
-// Custom Error Handler
+// Error handler
 app.use((err, req, res, next) => {
-    const statusCode = res.statusCode === 200 ? 500 : res.statusCode;
-    res.status(statusCode).json({
-        message: err.message,
-        stack: process.env.NODE_ENV === 'production' ? null : err.stack,
-    });
+  const statusCode = res.statusCode === 200 ? 500 : res.statusCode;
+  res.status(statusCode).json({
+    message: err.message,
+    stack: process.env.NODE_ENV === 'production' ? null : err.stack,
+  });
 });
 
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
-    console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+  console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
 });
